@@ -5,9 +5,26 @@ from datetime import datetime
 URL = "https://www.arbeitnow.com/api/job-board-api"
 
 def fetch_jobs():
-    response = requests.get(URL)
-    data = response.json()
-    return data["data"]
+    all_jobs = []
+    page = 1
+
+    while True:
+        url = f"{URL}?page={page}"
+        print(f"Fetching page {page}...")
+
+        response = requests.get(url)
+        data = response.json()
+
+        jobs = data["data"]
+        all_jobs.extend(jobs)
+
+        # Verifica se existe próxima página
+        if not data["links"]["next"]:
+            break
+
+        page += 1
+
+    return all_jobs
 
 def save_raw_data(jobs):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
