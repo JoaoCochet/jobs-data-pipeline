@@ -49,7 +49,7 @@ jobs:
 
       - name: Run transformation layer
         run: |
-          uv run python -c "from transformation import transform_jobs; transform_jobs()"
+          uv run python -c "from transform import transform_jobs; transform_jobs()"
 
       - name: Run gold layer
         run: |
