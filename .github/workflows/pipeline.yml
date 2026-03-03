@@ -49,8 +49,8 @@ jobs:
 
       - name: Run transformation layer
         run: |
-          uv run python -c "from transform.transform_job import transform_jobs; transform_jobs()"
+          uv run python -c "from transform import transform_jobs; transform_jobs()"
 
       - name: Run gold layer
         run: |
-          uv run python -c "from analytics.gold_jobs import generate_gold; generate_gold()"
+          uv run python -c "from analytics import gold_jobs; generate_gold()"
