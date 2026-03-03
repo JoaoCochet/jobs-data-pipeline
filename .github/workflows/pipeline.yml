@@ -47,10 +47,6 @@ jobs:
           ]
           EOF
 
-      - name: Run transformation layer
+      - name: Run pipeline
         run: |
-          uv run python -c "from transform.transform_jobs import transform_jobs; transform_jobs()"
-
-      - name: Run gold layer
-        run: |
-          uv run python -c "from analytics.gold_jobs import generate_gold; generate_gold()"
+          uv run python main.py
