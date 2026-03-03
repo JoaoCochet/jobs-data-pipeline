@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 jobs:
-  run-pipeline:
+  test-pipeline:
     runs-on: ubuntu-latest
 
     steps:
@@ -27,6 +27,30 @@ jobs:
         run: |
           uv sync
 
-      - name: Run pipeline
+      - name: Create mock bronze data
         run: |
-          uv run python main.py
+          mkdir -p data/bronze/2026/01/01
+          cat <<EOF > data/bronze/2026/01/01/jobs.json
+          [
+            {
+              "slug": "test-job",
+              "company_name": "Test Company",
+              "title": "Data Engineer",
+              "description": "Test description",
+              "remote": true,
+              "url": "https://example.com",
+              "tags": ["Python", "SQL"],
+              "job_types": ["Full-time"],
+              "location": "Remote",
+              "created_at": 1772449289
+            }
+          ]
+          EOF
+
+      - name: Run transformation layer
+        run: |
+          uv run python -c "from transformation import transform_jobs; transform_jobs()"
+
+      - name: Run gold layer
+        run: |
+          uv run python -c "from analytics import gold_jobs; generate_gold()"
