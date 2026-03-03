@@ -1,0 +1,1 @@
+from gold_jobs import generate_gold
