@@ -1,40 +1,39 @@
 import requests
-import json
-from datetime import datetime
+from utils import save_bronze_data, get_latest_created_at
 
-URL = "https://www.arbeitnow.com/api/job-board-api"
+API_URL = "https://www.arbeitnow.com/api/job-board-api"
 
-def fetch_jobs():
-    all_jobs = []
+
+def extract_jobs():
+    latest_created_at = get_latest_created_at()
+    print(f"Last created_at in bronze: {latest_created_at}")
+
     page = 1
+    all_new_jobs = []
 
     while True:
-        url = f"{URL}?page={page}"
-        print(f"Fetching page {page}...")
-
-        response = requests.get(url)
+        response = requests.get(f"{API_URL}?page={page}")
         data = response.json()
 
-        jobs = data["data"]
-        all_jobs.extend(jobs)
+        jobs = data.get("data", [])
 
-        # Verifica se existe próxima página
-        if not data["links"]["next"]:
+        if not jobs:
             break
 
+        new_jobs = [
+            job for job in jobs
+            if job.get("created_at", 0) > latest_created_at
+        ]
+
+        if not new_jobs:
+            break
+
+        all_new_jobs.extend(new_jobs)
         page += 1
 
-    return all_jobs
+    if all_new_jobs:
+        save_bronze_data(all_new_jobs)
+    else:
+        print("No new jobs found.")
 
-def save_raw_data(jobs):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"data/bronze/jobs_raw_{timestamp}.json"
-
-    with open(filename, "w", encoding="utf-8") as f:
-        json.dump(jobs, f, ensure_ascii=False, indent=2)
-
-    print(f"Saved {len(jobs)} jobs to {filename}")
-
-if __name__ == "__main__":
-    jobs = fetch_jobs()
-    save_raw_data(jobs)
+    return all_new_jobs

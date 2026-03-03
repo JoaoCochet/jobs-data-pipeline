@@ -1,72 +1,32 @@
-import pandas as pd
+import json
 from pathlib import Path
+from collections import Counter
 
-SILVER_FILE = "data/silver/jobs_clean.parquet"
-GOLD_DIR = "data/gold"
-
-
-def load_data():
-    return pd.read_parquet(SILVER_FILE)
+SILVER_PATH = Path("data/silver/jobs_clean.json")
+GOLD_PATH = Path("data/gold/jobs_summary.json")
 
 
-# ----------------------------
-# 1️⃣ Vagas por dia
-# ----------------------------
-def jobs_by_day(df):
-    result = (
-        df.groupby(df["published_at"].dt.date)
-        .size()
-        .reset_index(name="total_jobs")
-        .sort_values("published_at")
-    )
+def generate_gold():
+    with open(SILVER_PATH, "r") as f:
+        jobs = json.load(f)
 
-    result.to_parquet(f"{GOLD_DIR}/jobs_by_day.parquet", index=False)
-    print("✅ jobs_by_day criado")
+    total_jobs = len(jobs)
 
+    remote_count = sum(1 for job in jobs if job["remote"])
 
-# ----------------------------
-# 2️⃣ Top empresas
-# ----------------------------
-def top_companies(df):
-    result = (
-        df["company"]
-        .value_counts()
-        .reset_index()
-    )
+    tags_counter = Counter()
+    for job in jobs:
+        tags_counter.update(job["tags"])
 
-    result.columns = ["company", "total_jobs"]
+    gold_data = {
+        "total_jobs": total_jobs,
+        "remote_jobs": remote_count,
+        "top_10_tags": tags_counter.most_common(10)
+    }
 
-    result.to_parquet(f"{GOLD_DIR}/top_companies.parquet", index=False)
-    print("✅ top_companies criado")
+    GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
 
+    with open(GOLD_PATH, "w") as f:
+        json.dump(gold_data, f, indent=2)
 
-# ----------------------------
-# 3️⃣ Top skills
-# ----------------------------
-def top_skills(df):
-    skills = (
-        df["tags"]
-        .str.split(",")
-        .explode()
-        .value_counts()
-        .reset_index()
-    )
-
-    skills.columns = ["skill", "total_jobs"]
-
-    skills.to_parquet(f"{GOLD_DIR}/top_skills.parquet", index=False)
-    print("✅ top_skills criado")
-
-
-def main():
-    Path(GOLD_DIR).mkdir(parents=True, exist_ok=True)
-
-    df = load_data()
-
-    jobs_by_day(df)
-    top_companies(df)
-    top_skills(df)
-
-
-if __name__ == "__main__":
-    main()
+    print("Gold layer generated.")
